@@ -9,6 +9,7 @@ from medcat.utils.spelling import CustomSpellChecker
 from gensim.models import Word2Vec
 from medcat.preprocessing.iterators import SimpleIter
 from medcat.utils.loggers import basic_logger
+import os
 
 log = basic_logger("CAT")
 
@@ -69,10 +70,10 @@ class MakeVocab(object):
                 Should the words from the CDB be added to the Vocab. Default: True
         '''
         # Save the preprocessed data, used for emb training
-        out_path = out_folder + "data.txt"
-        vocab_path = out_folder + "vocab.dat"
+        out_path = os.path.join(out_folder,  "data.txt")
+        vocab_path = os.path.join(out_folder, "vocab.dat")
         self.vocab_path = vocab_path
-        out = open(out_path, 'w')
+        out = open(out_path, 'w', encoding="utf-8")
 
         for ind, doc in enumerate(iter_data):
             if ind % 10000 == 0:
@@ -107,7 +108,7 @@ class MakeVocab(object):
         self.vocab.save_dict(path=vocab_path)
 
 
-    def add_vectors(self, in_path=None, w2v=None, overwrite=False, data_iter=None, workers=8, niter=2, min_count=10, window=10, vsize=300):
+    def add_vectors(self, in_path=None, w2v=None, overwrite=False, data_iter=None, workers=8, niter=5, min_count=10, window=10, vsize=300):
         r'''
         Add vectors to an existing vocabulary and save changes to the vocab_path. 
 

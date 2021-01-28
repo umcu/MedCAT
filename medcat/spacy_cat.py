@@ -4,7 +4,7 @@ import operator
 from medcat.utils.loggers import basic_logger
 from medcat.utils.matutils import unitvec
 from medcat.utils.ml_utils import load_hf_tokenizer, build_vocab_from_hf
-from spacy.lang.en.stop_words import STOP_WORDS
+from spacy.lang.nl.stop_words import STOP_WORDS
 import os
 log = basic_logger("spacycat")
 
@@ -447,7 +447,7 @@ class SpacyCat(object):
             raw_name = _doc[i].lower_
 
 
-            if raw_name in self.cdb.name2cui and len(raw_name) > self.MIN_CONCEPT_LENGTH:
+            if raw_name in self.cdb.name2cui and len(raw_name) >= self.MIN_CONCEPT_LENGTH:
                 # Add annotation
                 if not self.train or not self._train_skip(raw_name) or self.force_train:
                     if not _doc[i].is_stop:
@@ -455,7 +455,7 @@ class SpacyCat(object):
                             self.to_disamb.append((list(tkns), raw_name))
                         else:
                             self.cat_ann.add_ann(raw_name, tkns, doc, self.to_disamb, doc_words)
-            elif name in self.cdb.name2cui and len(name) > self.MIN_CONCEPT_LENGTH:
+            elif name in self.cdb.name2cui and len(name) >= self.MIN_CONCEPT_LENGTH:
                 # Add annotation
                 if not self.train or not self._train_skip(name) or self.force_train:
                     if not _doc[i].is_stop:
@@ -486,13 +486,13 @@ class SpacyCat(object):
                     # There is not one entity containing these words
                     break
                 else:
-                    if raw_name in self.cdb.name2cui and len(raw_name) > self.MIN_CONCEPT_LENGTH:
+                    if raw_name in self.cdb.name2cui and len(raw_name) >= self.MIN_CONCEPT_LENGTH:
                         if not self.train or not self._train_skip(raw_name) or self.force_train:
                             if self.DISAMB_EVERYTHING:
                                 self.to_disamb.append((list(tkns), raw_name))
                             else:
                                 self.cat_ann.add_ann(raw_name, tkns, doc, self.to_disamb, doc_words)
-                    elif not skip and name in self.cdb.name2cui and len(name) > self.MIN_CONCEPT_LENGTH:
+                    elif not skip and name in self.cdb.name2cui and len(name) >= self.MIN_CONCEPT_LENGTH:
                         if not self.train or not self._train_skip(name) or self.force_train:
                             if self.DISAMB_EVERYTHING:
                                 self.to_disamb.append((list(tkns), name))

@@ -75,7 +75,7 @@ class CatAnn(object):
                             to_disamb.append((list(tkns), name))
                     else:
                         # We can be almost sure that everything is fine, threshold of 0.1
-                        if acc > 0.2:
+                        if acc > 0.1:
                             cui = max(scores.items(), key=operator.itemgetter(1))[0]
                             self._cat._add_ann(cui, doc, tkns, acc=acc/1.5, name=name)
                         else:
