@@ -496,7 +496,7 @@ class SpacyCat(object):
                                 self.to_disamb.append((list(tkns), raw_name))
                             else:
                                 # NEW: UPPERCASE
-                                if _doc[i].is_upper == self.cdb.name_isupper:
+                                if _doc[i].is_upper == self.cdb.name_isupper[raw_name]:
                                     self.cat_ann.add_ann(raw_name, tkns, doc, self.to_disamb, doc_words)
                     elif not skip and name in self.cdb.name2cui and len(name) > self.MIN_CONCEPT_LENGTH:
                         if not self.train or not self._train_skip(name) or self.force_train:
@@ -504,7 +504,7 @@ class SpacyCat(object):
                                 self.to_disamb.append((list(tkns), name))
                             else:
                                 # NEW: UPPERCASE
-                                if _doc[i].is_upper == self.cdb.name_isupper:
+                                if _doc[i].is_upper == self.cdb.name_isupper[name]:
                                     self.cat_ann.add_ann(name, tkns, doc, self.to_disamb, doc_words)
 
 
