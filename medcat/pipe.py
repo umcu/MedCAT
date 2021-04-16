@@ -43,6 +43,8 @@ class Pipe(object):
         for field in additional_fields:
             Token.set_extension(field, default=False, force=True)
 
+        # NEW: UPPERCASE
+        Token.set_extension('isupper', default=False, force=True)
 
     def add_token_normalizer(self, config, spell_checker=None):
         token_normalizer = TokenNormalizer(spell_checker=spell_checker, config=config)
