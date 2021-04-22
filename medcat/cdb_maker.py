@@ -154,7 +154,7 @@ class CDBMaker(object):
                                  len(raw_name.strip()) > 0]
                     for raw_name in raw_names:
                         raw_name = raw_name.strip()
-                        # NEW
+
                         # Check whether it is uppercase
                         isupper = raw_name.isupper()
 

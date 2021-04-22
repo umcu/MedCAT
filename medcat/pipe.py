@@ -38,13 +38,11 @@ class Pipe(object):
         self.nlp.add_pipe(tagger, name='tag_' + name, first=True)
         # Add custom fields needed for this usecase
         Token.set_extension('to_skip', default=False, force=True)
+        Token.set_extension('is_upper', default=False, force=True)
 
         # Add any additional fields that are required
         for field in additional_fields:
             Token.set_extension(field, default=False, force=True)
-
-        # NEW: UPPERCASE
-        Token.set_extension('isupper', default=False, force=True)
 
     def add_token_normalizer(self, config, spell_checker=None):
         token_normalizer = TokenNormalizer(spell_checker=spell_checker, config=config)
