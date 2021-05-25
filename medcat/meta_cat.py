@@ -1,3 +1,4 @@
+
 import os
 import json
 import pickle
@@ -40,8 +41,7 @@ class MetaCAT(object):
     def train(self, json_path, category_name=None, model_name='lstm', lr=0.01, test_size=0.1,
               batch_size=100, nepochs=20, class_weights=None, cv=0,
               ignore_cpos=False, model_config={}, cui_filter=None, fine_tune=False,
-              auto_save_model=True, score_average='weighted', replace_center=None, seed=11,
-              prerequisite={}):
+              auto_save_model=True, score_average='weighted', replace_center=None, seed=11, cat=None):
         r''' TODO: Docs
         '''
         set_all_seeds(seed)
@@ -53,7 +53,7 @@ class MetaCAT(object):
 
         # Prepare the data
         data = prepare_from_json(data, self.cntx_left, self.cntx_right, self.tokenizer, cui_filter=cui_filter,
-                replace_center=replace_center, cntx_in_chars=True, prerequisite=prerequisite)
+                replace_center=replace_center, cntx_in_chars=True, cat=cat)
 
         if category_name is not None:
             self.category_name = category_name
@@ -73,8 +73,10 @@ class MetaCAT(object):
             # We already have everything, just get the data
             data, _ = encode_category_values(data, vals=self.category_values)
 
+        #dependencies = torch.Tensor([x[3] for x in data])
+
         # Convert data tkns to ids
-        #data = tkns_to_ids(data, self.tokenizer)
+        # data = tkns_to_ids(data, self.tokenizer)
 
         if not fine_tune:
             if model_name == 'lstm':
@@ -87,7 +89,8 @@ class MetaCAT(object):
                 dropout = model_config.get("dropout", 0.5)
 
                 self.model = LSTM(self.embeddings, self.pad_id, nclasses=nclasses, bid=bid, num_layers=num_layers,
-                             input_size=input_size, hidden_size=hidden_size, dropout=dropout)
+                             input_size=input_size, hidden_size=hidden_size, dropout=dropout, dependencies=None)
+
 
         if cv == 0:
             (f1, p, r, cls_report) = train_network(self.model, data, max_seq_len=(self.cntx_left+self.cntx_right+1), lr=lr, test_size=test_size,
@@ -195,7 +198,7 @@ class MetaCAT(object):
                 # Support the new save in tokenizer 0.8.2+ from huggingface
                 self.tokenizer.save_model(self.save_dir, name='bbpe')
             elif hasattr(self.tokenizer, 'save'):
-                # The tokenizer wrapper saving  
+                # The tokenizer wrapper saving
                 self.tokenizer.save(self.save_dir, name='bbpe')
             # Save embeddings
             np.save(open(self.save_dir + "embeddings.npy", 'wb'), np.array(self.embeddings))
@@ -317,3 +320,4 @@ class MetaCAT(object):
                                                            'name': self.category_name}
 
         return doc
+

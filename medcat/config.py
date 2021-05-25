@@ -31,11 +31,10 @@ class Config(object):
                 'log_level': logging.INFO,
                 'log_format': '%(levelname)s:%(name)s: %(message)s',
                 'log_path': './medcat.log',
-                'spacy_disabled_components': ['ner', 'parser', 'vectors', 'textcat', 
-                                              'entity_linker', 'sentencizer', 'entity_ruler', 'merge_noun_chunks',
-                                              'merge_entities', 'merge_subtokens'],
+                'spacy_disabled_components': ['ner', 'textcat',
+                                            'entity_linker', 'entity_ruler'],
                 # What model will be used for tokenization
-                'spacy_model': 'en_core_sci_md',
+                'spacy_model': 'nl_core_news_sm',
                 # Separator that will be used to merge tokens of a name. Once a CDB is built this should
                 #always stay the same.
                 'separator': '~',

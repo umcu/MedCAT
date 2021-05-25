@@ -80,10 +80,10 @@ def train_network(net, data, lr=0.01, test_size=0.1, max_seq_len=41, pad_id=3000
                   nepochs=20, device='cpu', save_dir='./meta_cat/', class_weights=None, ignore_cpos=False,
                   auto_save_model=True, score_average='weighted'):
     # Split data
+
     y = np.array([x[0] for x in data])
     x = [x[1] for x in data]
     cent = np.array([x[2] for x in data])
-
     # Pad X and convert to array
     x = np.array([(sample + [pad_id] * max(0, max_seq_len - len(sample)))[0:max_seq_len] for sample in x])
 

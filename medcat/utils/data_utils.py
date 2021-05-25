@@ -1,13 +1,19 @@
+
 import numpy as np
 import json
 import copy
 from sklearn.metrics import cohen_kappa_score
 import torch
+import string
+from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import OneHotEncoder
 import pickle
+
 
 def set_all_seeds(seed):
     torch.manual_seed(seed)
     np.random.seed(seed)
+
 
 def count_annotations_project(project):
     cnt = 0
@@ -34,7 +40,6 @@ def load_data(data_path, require_annotations=True, order_by_num_ann=True):
                 data['projects'].append(project)
     else:
         data = data_candidates
-
 
     cnts = []
     if order_by_num_ann:
@@ -87,13 +92,13 @@ def meta_ann_from_ann(ann, meta_name):
 
 def are_anns_same(ann, ann2, meta_names=[], require_double_inner=True):
     if ann['cui'] == ann2['cui'] and \
-       ann['correct'] == ann2['correct'] and \
-       ann['deleted'] == ann2['deleted'] and \
-       ann['alternative'] == ann2['alternative'] and \
-       ann['killed'] == ann2['killed'] and \
-       ann['manually_created'] == ann2['manually_created'] and \
-       ann['validated'] == ann2['validated']:
-        #Check are meta anns the same if exist
+            ann['correct'] == ann2['correct'] and \
+            ann['deleted'] == ann2['deleted'] and \
+            ann['alternative'] == ann2['alternative'] and \
+            ann['killed'] == ann2['killed'] and \
+            ann['manually_created'] == ann2['manually_created'] and \
+            ann['validated'] == ann2['validated']:
+        # Check are meta anns the same if exist
         for meta_name in meta_names:
             meta_ann = meta_ann_from_ann(ann, meta_name)
             meta_ann2 = meta_ann_from_ann(ann2, meta_name)
@@ -102,8 +107,8 @@ def are_anns_same(ann, ann2, meta_names=[], require_double_inner=True):
                     return False
             elif require_double_inner:
                 # Remove all annotations that do not have the required meta_anns, this
-                #will basically remove double_anns on the meta_level that are marked as incorrect. 
-                #We want this, so all good.
+                # will basically remove double_anns on the meta_level that are marked as incorrect.
+                # We want this, so all good.
                 return False
     else:
         return False
@@ -135,16 +140,16 @@ def get_same_anns(document, document2, require_double_inner=True, ann_stats=[], 
             if ann2 is not None:
                 # Only do meta_anns if both anns exist
                 for id, meta_name in enumerate(meta_names):
-                    ann_stats[id+2].append(['unk', 'unk'])
+                    ann_stats[id + 2].append(['unk', 'unk'])
 
                     # For ann1
                     meta_ann = meta_ann_from_ann(ann, meta_name)
                     if meta_ann is not None:
-                        ann_stats[id+2][-1][0] = meta_ann['value']
+                        ann_stats[id + 2][-1][0] = meta_ann['value']
                     # For ann2
                     meta_ann = meta_ann_from_ann(ann2, meta_name)
                     if meta_ann is not None:
-                        ann_stats[id+2][-1][1] = meta_ann['value']
+                        ann_stats[id + 2][-1][1] = meta_ann['value']
 
                 if ann2['correct']:
                     pair[1] = 1
@@ -184,7 +189,6 @@ def get_same_anns(document, document2, require_double_inner=True, ann_stats=[], 
     return new_document
 
 
-
 def print_consolid_stats(ann_stats=[], meta_names=[]):
     if ann_stats:
         _ann_stats = np.array(ann_stats[0])
@@ -208,7 +212,7 @@ def print_consolid_stats(ann_stats=[], meta_names=[]):
 
         for id, meta_name in enumerate(meta_names):
             if len(ann_stats) > id + 2:
-                _ann_stats = np.array(ann_stats[id+2])
+                _ann_stats = np.array(ann_stats[id + 2])
 
                 ck = cohen_kappa_score(_ann_stats[:, 0], _ann_stats[:, 1])
 
@@ -222,8 +226,8 @@ def print_consolid_stats(ann_stats=[], meta_names=[]):
                 print("   InAgreement vs Total: {} / {}".format(t, len(_ann_stats)))
 
 
-
-def check_differences(data_path, cat, cntx_size=30, min_acc=0.2, ignore_already_done=False, only_start=False, only_saved=False):
+def check_differences(data_path, cat, cntx_size=30, min_acc=0.2, ignore_already_done=False, only_start=False,
+                      only_saved=False):
     data = load_data(data_path, require_annotations=True)
     for pid, project in enumerate(data['projects']):
         print("Starting: {} / {}".format(pid, len(data['projects'])))
@@ -264,7 +268,6 @@ def check_differences(data_path, cat, cntx_size=30, min_acc=0.2, ignore_already_
                 print()
                 print("P: ", p_anns_norm)
 
-
                 print("\n\nSTARTING MC TO GT")
                 for id, p_ann in enumerate(p_anns_norm):
                     if (only_start and p_ann[0] not in t_anns_start) or (not only_start and p_ann not in t_anns_norm):
@@ -274,17 +277,18 @@ def check_differences(data_path, cat, cntx_size=30, min_acc=0.2, ignore_already_
                             start = ann.start_char
                             end = ann.end_char
                             cui = ann._.cui
-                            b = text[max(0, start-cntx_size):start].replace("\n", " ").replace('\r', ' ')
+                            b = text[max(0, start - cntx_size):start].replace("\n", " ").replace('\r', ' ')
                             m = text[start:end].replace("\n", " ").replace('\r', ' ')
-                            e = text[end:min(len(text), end+cntx_size)].replace("\n", " ").replace('\r', ' ')
+                            e = text[end:min(len(text), end + cntx_size)].replace("\n", " ").replace('\r', ' ')
                             print("SNIPPET: {} <<<{}>>> {}".format(b, m, e))
-                            print(cui, " | ", cat.cdb.cui2pretty_name.get(cui, ''), " | ", cat.cdb.cui2tui.get(cui, ''), " | ", ann.start_char)
+                            print(cui, " | ", cat.cdb.cui2pretty_name.get(cui, ''), " | ", cat.cdb.cui2tui.get(cui, ''),
+                                  " | ", ann.start_char)
                             print(ann._.acc)
                             d = str(input("###Add as (or empty for skip): 1-Correct, 2-Incorrect, s-save: "))
 
                             if d:
                                 new_ann = {}
-                                new_ann['id'] = 0 #ignore
+                                new_ann['id'] = 0  # ignore
                                 new_ann['user'] = 'auto'
                                 new_ann['validated'] = True
                                 new_ann['last_modified'] = ''
@@ -325,14 +329,17 @@ def check_differences(data_path, cat, cntx_size=30, min_acc=0.2, ignore_already_
                     add_ann = True
                     ann = doc['annotations'][id]
                     if (not only_saved and not only_start and t_ann not in p_anns_norm) or \
-                       (not only_saved and only_start and t_ann[0] not in p_anns_start) or \
-                       (only_saved and ann.get("_saved", False)):
+                            (not only_saved and only_start and t_ann[0] not in p_anns_start) or \
+                            (only_saved and ann.get("_saved", False)):
                         # Check is it correct
-                        if not ann.get('_verified', False) or ignore_already_done or (only_saved and ann.get('_saved', False)):
+                        if not ann.get('_verified', False) or ignore_already_done or (
+                                only_saved and ann.get('_saved', False)):
                             print("\n\nThis does not exist in mc annotations or it is a saved item")
-                            b = text[max(0, ann['start']-cntx_size):ann['start']].replace("\n", " ").replace('\r', ' ')
+                            b = text[max(0, ann['start'] - cntx_size):ann['start']].replace("\n", " ").replace('\r',
+                                                                                                               ' ')
                             m = text[ann['start']:ann['end']].replace("\n", " ").replace('\r', ' ')
-                            e = text[ann['end']:min(len(text), ann['end']+cntx_size)].replace("\n", " ").replace('\r', ' ')
+                            e = text[ann['end']:min(len(text), ann['end'] + cntx_size)].replace("\n", " ").replace('\r',
+                                                                                                                   ' ')
                             print("SNIPPET: {} <<<{}>>> {}".format(b, m, e))
                             print(ann['cui'], " | ", cat.cdb.cui2pretty_name.get(ann['cui'], ''), " | ", ann['start'])
                             print("Current status")
@@ -340,7 +347,8 @@ def check_differences(data_path, cat, cntx_size=30, min_acc=0.2, ignore_already_
                             print("  Incorrect:   " + str(ann['deleted']))
                             print("  Alternative: " + str(ann['alternative']))
                             print("  Killed:      " + str(ann['killed']))
-                            d = str(input("###Change to (or empty for skip): 1-Correct, 2-Incorrect, d-delete, s-save: "))
+                            d = str(
+                                input("###Change to (or empty for skip): 1-Correct, 2-Incorrect, d-delete, s-save: "))
 
                             if d == '1':
                                 ann['correct'] = True
@@ -373,7 +381,9 @@ def check_differences(data_path, cat, cntx_size=30, min_acc=0.2, ignore_already_
 
     json.dump(data, open(data_path, 'w'))
 
-def consolidate_double_annotations(data_path, out_path, require_double=True, require_double_inner=False, meta_anns_to_match=[]):
+
+def consolidate_double_annotations(data_path, out_path, require_double=True, require_double_inner=False,
+                                   meta_anns_to_match=[]):
     """ Consolidated a dataset that was multi-annotated (same documents two times).
 
     data_path:
@@ -397,7 +407,7 @@ def consolidate_double_annotations(data_path, out_path, require_double=True, req
     data = load_data(data_path, require_annotations=True)
     out_data = {'projects': []}
     projects_done = set()
-    ann_stats = [] # This will keep score for agreement
+    ann_stats = []  # This will keep score for agreement
     # Consolidate
     for project in data['projects']:
         id = project['id']
@@ -429,7 +439,8 @@ def consolidate_double_annotations(data_path, out_path, require_double=True, req
                         document2 = get_doc_from_project(project2, document['id'])
 
                         if document2 is not None:
-                            new_document = get_same_anns(document, document2, require_double_inner=require_double_inner, ann_stats=ann_stats_project, meta_names=meta_anns_to_match)
+                            new_document = get_same_anns(document, document2, require_double_inner=require_double_inner,
+                                                         ann_stats=ann_stats_project, meta_names=meta_anns_to_match)
                             new_documents.append(new_document)
                         elif not require_double_inner:
                             # Use the base document if we are allowing no double anns
@@ -460,6 +471,7 @@ def consolidate_double_annotations(data_path, out_path, require_double=True, req
     print_consolid_stats(ann_stats, meta_names=meta_anns_to_match)
     return d_stats_proj
 
+
 def validate_ner_data(data_path, cdb, cntx_size=70, status_only=False, ignore_if_already_done=False):
     """ Please just ignore this function, I'm afraid to even look at it
     """
@@ -468,7 +480,8 @@ def validate_ner_data(data_path, cdb, cntx_size=70, status_only=False, ignore_if
     cui2status = {}
 
     print("This will overwrite the original data, make sure you've a backup")
-    print("If something is completely wrong or you do not know what to do, chose the [s]kip option, you can also skip by leaving input blank.")
+    print(
+        "If something is completely wrong or you do not know what to do, chose the [s]kip option, you can also skip by leaving input blank.")
     print("If you want to [q]uit write  q  your progress will be saved to the json and you can continue later")
 
     for project in data['projects']:
@@ -519,19 +532,22 @@ def validate_ner_data(data_path, cdb, cntx_size=70, status_only=False, ignore_if
                         if len(name2cui[name]) > 1:
                             cuis = list(name2cui[name].keys())
                             print("\n\nThis name was annotated with multiple CUIs\n")
-                            b = text[max(0, start-cntx_size):start].replace("\n", " ")
+                            b = text[max(0, start - cntx_size):start].replace("\n", " ")
                             m = text[start:end].replace("\n", " ")
-                            e = text[end:min(len(text), end+cntx_size)].replace("\n", " ")
+                            e = text[end:min(len(text), end + cntx_size)].replace("\n", " ")
                             print("SNIPPET: {} <<<{}>>> {}".format(b, m, e))
                             print()
-                            print("C | {:3} | {:20} | {:70} | {}".format("ID", "CUI", "Concept", "Number of annotations in the dataset"))
-                            print("-"*110)
+                            print("C | {:3} | {:20} | {:70} | {}".format("ID", "CUI", "Concept",
+                                                                         "Number of annotations in the dataset"))
+                            print("-" * 110)
                             for id, _cui in enumerate(cuis):
                                 if _cui == cui:
                                     c = "+"
                                 else:
                                     c = " "
-                                print("{} | {:3} | {:20} | {:70} | {}".format(c, id, _cui, cdb.cui2pretty_name.get(_cui, 'unk')[:69], name2cui[name][_cui]))
+                                print("{} | {:3} | {:20} | {:70} | {}".format(c, id, _cui,
+                                                                              cdb.cui2pretty_name.get(_cui, 'unk')[:69],
+                                                                              name2cui[name][_cui]))
                             print()
                             d = str(input("###Change to ([s]kip/[q]uit/id): "))
 
@@ -580,7 +596,6 @@ def validate_ner_data(data_path, cdb, cntx_size=70, status_only=False, ignore_if
                     else:
                         cui2status[cui] = {name: {status: 1}}
 
-
         for project in data['projects']:
             for document in project['documents']:
                 text = str(document['text'])
@@ -606,14 +621,14 @@ def validate_ner_data(data_path, cdb, cntx_size=70, status_only=False, ignore_if
                         if len(cui2status[cui][name]) > 1:
                             ss = list(cui2status[cui][name].keys())
                             print("\n\nThis name was annotated with different status\n")
-                            b = text[max(0, start-cntx_size):start].replace("\n", " ")
+                            b = text[max(0, start - cntx_size):start].replace("\n", " ")
                             m = text[start:end].replace("\n", " ")
-                            e = text[end:min(len(text), end+cntx_size)].replace("\n", " ")
+                            e = text[end:min(len(text), end + cntx_size)].replace("\n", " ")
                             print("SNIPPET           : {} <<<{}>>> {}".format(b, m, e))
                             print("CURRENT STATUS    : {}".format(status))
                             print("CURRENT ANNOTATION: {} - {}".format(cui, cdb.cui2pretty_name.get(cui, 'unk')))
                             print("ANNS TOTAL        :")
-                            for k,v in cui2status[cui][name].items():
+                            for k, v in cui2status[cui][name].items():
                                 print("        {}: {}".format(str(k), str(v)))
                             print()
 
@@ -664,7 +679,6 @@ class MetaAnnotationDS(torch.utils.data.Dataset):
         self.data = data
         self.category_map = category_map
 
-
     def __getitem__(self, idx):
         item = {}
         for key, value in self.data.items():
@@ -674,9 +688,10 @@ class MetaAnnotationDS(torch.utils.data.Dataset):
                 item[key] = torch.tensor(self.category_map[value[idx]])
         return item
 
-
     def __len__(self):
         return len(self.data['input_ids'])
+
+
 """
 def add_ids_and_cpos_to_docs(data_path, cntx_left, cntx_right, tokenizer, max_seq_len, cui_filter=None, replace_center=None, batch_size=100000):
     data = pickle.load(open(data_path, 'rb'))
@@ -782,12 +797,15 @@ def prepare_from_json_hf(data_path, cntx_left, cntx_right, tokenizer, cui_filter
 
     return out
 """
-def prepare_from_json_hf(data_path, cntx_left, cntx_right, tokenizer, cui_filter=None, replace_center=None, max_seq_len=None):
+
+
+def prepare_from_json_hf(data_path, cntx_left, cntx_right, tokenizer, cui_filter=None, replace_center=None,
+                         max_seq_len=None):
     out = {}
     data = json.load(open(data_path))
 
     p_data = prepare_from_json_chars(data, cntx_left=cntx_left, cntx_right=cntx_right, tokenizer=tokenizer,
-                               cui_filter=cui_filter, replace_center=replace_center)
+                                     cui_filter=cui_filter, replace_center=replace_center)
 
     _max_seq_len = max_seq_len
     for name in p_data.keys():
@@ -827,7 +845,8 @@ def prepare_from_json_chars(data, cntx_left, cntx_right, tokenizer, cui_filter=N
                         cui = ann['cui']
 
                     if cui_filter is None or not cui_filter or cui in cui_filter:
-                        if ann.get('validated', True) and (not ann.get('deleted', False) and not ann.get('killed', False)):
+                        if ann.get('validated', True) and (
+                                not ann.get('deleted', False) and not ann.get('killed', False)):
                             start = ann['start']
                             end = ann['end']
 
@@ -841,7 +860,7 @@ def prepare_from_json_chars(data, cntx_left, cntx_right, tokenizer, cui_filter=N
                                 t_center = tokenizer(replace_center)['input_ids']
 
                             tkns = t_left + t_center + t_right
-                            cpos = len(t_left)
+                            cpos = len(t_left) - 1
 
                             # Backward compatibility if meta_anns is a list vs dict in the new approach
                             meta_anns = []
@@ -866,8 +885,8 @@ def prepare_from_json_chars(data, cntx_left, cntx_right, tokenizer, cui_filter=N
     return out_data
 
 
-
-def prepare_from_json(data, cntx_left, cntx_right, tokenizer, cntx_in_chars=False, cui_filter=None, replace_center=None, prerequisite={}):
+def prepare_from_json(data, cntx_left, cntx_right, tokenizer, cntx_in_chars=False, cui_filter=None, replace_center=None,
+                      cat=None):
     """ Convert the data from a json format into a CSV-like format for training.
 
     data:  json file from MedCAT
@@ -880,29 +899,95 @@ def prepare_from_json(data, cntx_left, cntx_right, tokenizer, cntx_in_chars=Fals
     """
     out_data = {}
 
+    dep_labels = np.array(["", "acl", "acomp", "advcl", "advmod", "agent", "amod", "appos", "attr", "aux", "auxpass",
+                           "case", "cc", "ccomp", "compound", "cop", "conj", "csubj", "csubjpass", "dative", "dep",
+                           "det", "flat", "acl:relcl", 'fixed', 'expl:pv', 'compound:prt', 'aux:pass', 'nmod:poss',
+                           "obl:agent",'orphan',
+                           "dobj", "expl", "intj", "mark", "meta", "neg", "nmod", "nounmod", "npmod", "nsubj",
+                           "nsubj:pass", "iobj",
+                           "nummod", "obj", "obl", "oprd", "parataxis", "pcomp", "pobj", "poss", "preconj", "predet",
+                   #        "prep", "prt",
+                           "punct", "quantmod", "relcl", "root", "ROOT", "xcomp"])
+
+    pos_all = np.array(["", "ADJ", "ADP", "ADV", "AUX", "CONJ", "CCONJ", "DET", "INTJ", "NOUN", "NUM",
+                        "PART", "PRON", "PROPN", "PUNCT", "ROOT", "SCONJ", "SYM", "VERB", "X", "EOL", "SPACE"])
+
+    label_encoder_pos = LabelEncoder()
+    integer_encoded_pos = label_encoder_pos.fit_transform(pos_all)
+    integer_encoded_pos = integer_encoded_pos.reshape(len(integer_encoded_pos), 1)
+
+    onehot_encoder_pos = OneHotEncoder(sparse=False)
+    onehot_encoder_pos = onehot_encoder_pos.fit(integer_encoded_pos)
+
+    label_encoder_dep = LabelEncoder()
+    integer_encoded_dep = label_encoder_dep.fit_transform(dep_labels)
+    integer_encoded_dep = integer_encoded_dep.reshape(len(integer_encoded_dep), 1)
+
+    onehot_encoder_dep = OneHotEncoder(sparse=False)
+    onehot_encoder_dep = onehot_encoder_dep.fit(integer_encoded_dep)
+
+
     for project in data['projects']:
         for document in project['documents']:
-            text = str(document['text'])
-
-            if len(text) > 0:
-                doc_text = tokenizer(text)
 
                 for ann in document['annotations']:
+                    text = str(document['text'])
+
+                    if len(text) > 0:
+                        doc_text = tokenizer(text)
+                        text = text.translate(str.maketrans('', '', string.punctuation))
+                        text_token = text.split()
+                        child = ""
+                        if cat != None:
+
+                            doc = cat(text)
+                            token_i = 0
+
+                            for token in range(len(text_token)):
+
+                                check = str(text_token[token])
+                                # for i in range(len(doc.ents)):
+                                #     ents = str(doc.ents[i])
+                                if check == ann['value']:
+                                    token_i = token
+
+                                    pos_input = np.array([doc[token_i].pos_])
+                                    dep_in = np.array([doc[token_i].dep_])
+                                    dep_out = np.array([child.dep_ for child in doc[token_i].children])
+                                  #  print([child.dep_ for child in doc[token_i].children])
+                                    child = np.array([child.dep_ for child in doc[token_i].children])
+
+                                    integer_encoded_pos = label_encoder_pos.transform(pos_input)
+                                    integer_encoded_pos = integer_encoded_pos.reshape(len(integer_encoded_pos), 1)
+                                    onehot_pos = onehot_encoder_pos.transform(integer_encoded_pos).reshape(-1)
+
+
+                                    integer_encoded_dep_in = label_encoder_dep.transform(dep_in)
+                                    integer_encoded_dep_in = integer_encoded_dep_in.reshape(
+                                        len(integer_encoded_dep_in), 1)
+                                    onehot_pos_dep_in = onehot_encoder_dep.transform(
+                                        integer_encoded_dep_in).reshape(-1)
+
+                                    if len(dep_out) != 0:
+                                        integer_encoded_dep_out = label_encoder_dep.transform(dep_out)
+                                        integer_encoded_dep_out = integer_encoded_dep_out.reshape(
+                                            len(integer_encoded_dep_out), 1)
+                                        onehot_pos_dep_out = onehot_encoder_dep.transform(
+                                            integer_encoded_dep_out).reshape(
+                                            -1)
+                        if cat != None:
+                            input_array = np.concatenate((onehot_pos, onehot_pos_dep_in), axis=0)
+
+                            ann["parse"] = input_array
+                            ann["child"] = child
+
                     tui = ""
                     if cui_filter:
                         cui = ann['cui']
 
-                    skip = False
-
-                    if 'meta_anns' in ann and prerequisite:
-                        # It is possible to require certain meta_anns to exist and have a specific value
-                        for meta_ann in prerequisite:
-                            if meta_ann not in ann['meta_anns'] or ann['meta_anns'][meta_ann]['value'] != prerequisite[meta_ann]:
-                                # Skip this annotation as the prerequisite is not met
-                                skip = True
-
-                    if not skip and (cui_filter is None or not cui_filter or cui in cui_filter):
-                        if ann.get('validated', True) and (not ann.get('deleted', False) and not ann.get('killed', False)):
+                    if cui_filter is None or not cui_filter or cui in cui_filter:
+                        if ann.get('validated', True) and (
+                                not ann.get('deleted', False) and not ann.get('killed', False)):
                             start = ann['start']
                             end = ann['end']
 
@@ -916,7 +1001,8 @@ def prepare_from_json(data, cntx_left, cntx_right, tokenizer, cntx_in_chars=Fals
                                 _start = max(0, ind - cntx_left)
                                 _end = min(len(doc_text['input_ids']), ind + 1 + cntx_right)
                                 tkns = doc_text['input_ids'][_start:_end]
-                                cpos = cntx_left + min(0, ind-cntx_left)
+                                print("tkns", tkns)
+                                cpos = cntx_left + min(0, ind - cntx_left)
 
                                 if replace_center is not None:
                                     for p_ind, pair in enumerate(doc_text['offset_mapping']):
@@ -926,7 +1012,7 @@ def prepare_from_json(data, cntx_left, cntx_right, tokenizer, cntx_in_chars=Fals
                                             e_ind = p_ind
 
                                     ln = e_ind - s_ind
-                                    tkns[cpos:cpos+ln+1] = [tokenizer(replace_center)['input_ids'][0]]
+                                    tkns[cpos:cpos + ln + 1] = [tokenizer(replace_center)['input_ids'][0]]
 
                             else:
                                 _start = max(0, start - cntx_left)
@@ -938,8 +1024,15 @@ def prepare_from_json(data, cntx_left, cntx_right, tokenizer, cntx_in_chars=Fals
                                 else:
                                     t_center = tokenizer(replace_center)['input_ids']
 
-                                tkns = t_left + t_center + t_right
-                                cpos = len(t_left)
+                                # tkns = t_left + t_center + t_right + t_child
+                                # cpos = len(t_left) #+ len(t_child)
+                                if len(ann["child"]) != 0:
+                                    t_child = tokenizer(str(ann["child"]))['input_ids']
+                                    tkns = t_left + t_center + t_right + t_child + t_child
+                                    cpos = len(t_left) #+ len(t_child)
+                                else:
+                                    tkns = t_left + t_center + t_right #+ t_right
+                                    cpos = len(t_left) #+ len(t_center)
 
                             # Backward compatibility if meta_anns is a list vs dict in the new approach
                             meta_anns = []
@@ -953,7 +1046,8 @@ def prepare_from_json(data, cntx_left, cntx_right, tokenizer, cntx_in_chars=Fals
                             for meta_ann in meta_anns:
                                 name = meta_ann['name']
                                 value = meta_ann['value']
-
+                                dep = list(ann['parse'])
+                             #   sample = [value, list(tkns) + dep, cpos]
                                 sample = [value, tkns, cpos]
 
                                 if name in out_data:
@@ -968,7 +1062,7 @@ def encode_category_values(data, vals=None):
     data = list(data)
     if vals is None:
         vals = set([x[0] for x in data])
-        vals = {name:i for i,name in enumerate(vals)}
+        vals = {name: i for i, name in enumerate(vals)}
 
     # Map values to numbers
     for i in range(len(data)):
@@ -1009,15 +1103,15 @@ def make_mc_train_test(data, cdb, seed=17, test_size=0.2):
 
             for ann in doc_annotations:
 
-                if (cui_filter is None and tui_filter is None) or (cui_filter is not None and ann['cui'] in cui_filter) or \
-                   (tui_filter is not None and cdb.cui2tui.get(ann['cui'], 'unk') in tui_filter):
+                if (cui_filter is None and tui_filter is None) or (
+                        cui_filter is not None and ann['cui'] in cui_filter) or \
+                        (tui_filter is not None and cdb.cui2tui.get(ann['cui'], 'unk') in tui_filter):
                     if ann['cui'] in cnts:
                         cnts[ann['cui']] += 1
                     else:
                         cnts[ann['cui']] = 1
 
                     total_anns += 1
-
 
     test_cnts = {}
     test_anns = 0
@@ -1046,7 +1140,6 @@ def make_mc_train_test(data, cdb, seed=17, test_size=0.2):
         if 'tuis' in project and len(project['tuis'].strip()) > 0:
             tui_filter = [x.strip().upper() for x in project['tuis'].split(",")]
 
-
         for i_document in np.random.permutation(np.arange(0, len(project['documents']))):
             # Do we have enough documents in the test set
             if test_anns / total_anns >= test_size:
@@ -1062,13 +1155,13 @@ def make_mc_train_test(data, cdb, seed=17, test_size=0.2):
                 doc_annotations = document['annotations'].values()
 
             for ann in doc_annotations:
-                if (cui_filter is None and tui_filter is None) or (cui_filter is not None and ann['cui'] in cui_filter) or \
-                   (tui_filter is not None and cdb.cui2tui.get(ann['cui'], 'unk') in tui_filter):
+                if (cui_filter is None and tui_filter is None) or (
+                        cui_filter is not None and ann['cui'] in cui_filter) or \
+                        (tui_filter is not None and cdb.cui2tui.get(ann['cui'], 'unk') in tui_filter):
                     if ann['cui'] in _cnts:
                         _cnts[ann['cui']] += 1
                     else:
                         _cnts[ann['cui']] = 1
-
 
             # Did we get more than 30% of concepts for any CUI with >=10 cnt
             is_test = True
@@ -1076,7 +1169,7 @@ def make_mc_train_test(data, cdb, seed=17, test_size=0.2):
                 if (v + test_cnts.get(cui, 0)) / cnts[cui] > 0.3:
                     if cnts[cui] >= 10:
                         # We only care for concepts if count >= 10, else they will be ignored
-                        #during the test phase (for all metrics and similar)
+                        # during the test phase (for all metrics and similar)
                         is_test = False
                         break
 
@@ -1089,8 +1182,9 @@ def make_mc_train_test(data, cdb, seed=17, test_size=0.2):
                     doc_annotations = document['annotations'].values()
 
                 for ann in doc_annotations:
-                    if (cui_filter is None and tui_filter is None) or (cui_filter is not None and ann['cui'] in cui_filter) or \
-                       (tui_filter is not None and cdb.cui2tui.get(ann['cui'], 'unk') in tui_filter):
+                    if (cui_filter is None and tui_filter is None) or (
+                            cui_filter is not None and ann['cui'] in cui_filter) or \
+                            (tui_filter is not None and cdb.cui2tui.get(ann['cui'], 'unk') in tui_filter):
                         test_anns += 1
                         if ann['cui'] in test_cnts:
                             test_cnts[ann['cui']] += 1
@@ -1115,5 +1209,5 @@ def get_false_positives(doc, spacy_doc):
     for ent in spacy_doc._.ents:
         if (ent.start_char, ent._.cui) not in truth:
             fps.append(ent)
-    
+
     return fps
