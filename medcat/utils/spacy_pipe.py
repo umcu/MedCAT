@@ -5,13 +5,13 @@ import spacy
 import os
 
 class SpacyPipe(object):
-    SPACY_MODEL = os.getenv("SPACY_MODEL", 'en_core_sci_md')
+    SPACY_MODEL = os.getenv("SPACY_MODEL", 'nl_core_news_sm')
     def __init__(self, tokenizer, disable=['ner', 'parser', 'vectors', 'textcat']):
         self.nlp = spacy.load(self.SPACY_MODEL, disable=disable)
         self.nlp.tokenizer = tokenizer(self.nlp)
 
 
-    def add_punct_tagger(self, tagger):
+    def add_punct_tagger(self, tagger)
         """ Tagging for punct
         """
         self.nlp.add_pipe(tagger, name='tag_punct', first=True)

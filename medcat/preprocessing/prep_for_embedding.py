@@ -8,7 +8,7 @@ def clean_and_phrase(iter_data, nlp, out_path):
     out_path:  where to save the new data
     """
 
-    out = open(out_path, 'w', encoding='utf-8')
+    out = open(out_path, 'w')
 
     for doc in iter_data:
         doc = nlp(doc)

@@ -2,7 +2,6 @@ import numpy as np
 from medcat.cdb import CDB
 from medcat.preprocessing.cleaners import clean_name
 import html
-import os
 from medcat.utils.other import TPL_ENT, TPL_ENTS
 
 
@@ -138,6 +137,15 @@ def tkn_inds_from_doc(spacy_doc, text_inds=None, source_val=None):
                 tkn_inds.append(tkn.i)
 
     return tkn_inds
+
+
+def tkns_from_doc(spacy_doc, start, end):
+    tkns = []
+    for tkn in spacy_doc:
+        if tkn.idx >= start and tkn.idx <= end:
+            tkns.append(tkn)
+
+    return tkns
 
 
 def filter_cdb_by_icd10(cdb: CDB) -> CDB:
@@ -390,18 +398,19 @@ def remove_icd10_ranges(cdb):
                 del cdb.cui2info[cui]['icd10']
 
 
-def check_scispacy():
+def dep_check_scispacy():
+    # IGNORE FUNCTION
     import spacy
     import subprocess
     import sys
     try:
-        spacy_model = os.getenv("SPACY_MODEL", 'en_core_sci_md')
-        nlp = spacy.load(spacy_model)
-    except Exception as e:
-        print(e)
+        nlp = spacy.load("en_core_sci_md")
+    except:
         print("Installing the missing models for scispacy\n")
         pkg = 'https://s3-us-west-2.amazonaws.com/ai2-s2-scispacy/releases/v0.2.4/en_core_sci_md-0.2.4.tar.gz'
         subprocess.check_call([sys.executable, '-m', 'pip', 'install', pkg])
+
+
 
 
 def run_cv(cdb_path, data_path, vocab_path, cv=100, nepochs=16, test_size=0.1, lr=1, groups=None, **kwargs):
