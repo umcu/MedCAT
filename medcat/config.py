@@ -41,7 +41,7 @@ class Config(object):
                 'separator': '~',
                 # Should we check spelling - note that this makes things much slower, use only if necessary. The only thing necessary
                 #for the spell checker to work is vocab.dat and cdb.dat built with concepts in the respective language.
-                'spell_check': False,
+                'spell_check': True,
                 # If True the spell checker will try harder to find mistakes, this can slow down
                 #things drastically.
                 'spell_check_deep': False,
@@ -51,6 +51,8 @@ class Config(object):
                 'show_nested_entities': False,
                 # When unlinking a name from a concept should we do full_unlink (means unlink a name from all concepts, not just the one in question)
                 'full_unlink': False,
+                # Additional checking whether the concepts are uppercase or not before linking concepts
+                'check_upper_case_names': False,
                 }
 
         self.preprocessing = {
@@ -125,6 +127,8 @@ class Config(object):
                 # When adding a positive example, should it also be treated as Negative for concepts
                 #which link to the postive one via names (ambigous names).
                 'devalue_linked_concepts': False,
+                # If true when the context of a concept is calculated (embedding) the words making that concept are not taken into accout
+                'context_ignore_center_tokens': False,
                 # Filters
                 'filters': {
                     'cuis': set(), # CUIs in this filter will be included, everything else excluded, must be a set, if empty all cuis will be included

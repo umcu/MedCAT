@@ -7,7 +7,6 @@ from copy import deepcopy
 from tqdm.autonotebook import tqdm
 from multiprocessing import Process, Manager, Queue, Pool, Array
 from time import sleep
-import psutil
 
 from medcat.cdb import CDB
 from medcat.preprocessing.tokenizers import spacy_split_all
@@ -345,7 +344,7 @@ class CAT(object):
         return fps, fns, tps, cui_prec, cui_rec, cui_f1, cui_counts, examples
 
 
-    def train(self, data_iterator, fine_tune=True, progress_print=1000, verbose=False):
+    def train(self, data_iterator, fine_tune=True, progress_print=1000):
         """ Runs training on the data, note that the maximum lenght of a line
         or document is 1M characters. Anything longer will be trimmed.
 
@@ -362,24 +361,19 @@ class CAT(object):
             self.cdb.reset_training()
 
         cnt = 0
-        wrng_cnt = 0
         for line in data_iterator:
-            if (line is not None) and (isinstance(line, str)):
-                # Convert to strings
-                line = line.strip()
+            if line is not None and line:
+                # Convert to string
+                line = str(line).strip()
+
                 try:
                     _ = self(line, do_train=True)
-                    cnt += 1
-                    #self.log.info(f"SUCCESS!: {line}")
                 except Exception as e:
-                    self.log.warning("LINE: '{}...' \t WAS SKIPPED".format(line))
-                    #self.log.warning("BECAUSE OF: " + str(e))
-                    wrng_cnt += 1
-                    pass
-                if (cnt % progress_print == 0) & (verbose==True):
-                    self.log.warning(f"SUCCESS: {str(cnt)}")
-                    self.log.warning(f"FAILED: {str(wrng_cnt)}")
-                
+                    self.log.warning("LINE: '{}...' \t WAS SKIPPED".format(line[0:100]))
+                    self.log.warning("BECAUSE OF: " + str(e))
+                if cnt % progress_print == 0:
+                    self.log.info("DONE: " + str(cnt))
+                cnt += 1
 
         self.config.linking['train'] = False
 
@@ -649,7 +643,7 @@ class CAT(object):
         return fp, fn, tp, p, r, f1, cui_counts, examples
 
 
-    def get_entities(self, text, only_cui=False, addl_info=['cui2icd10', 'cui2ontologies']):
+    def get_entities(self, text, only_cui=False, addl_info=['cui2icd10', 'cui2ontologies', 'cui2snomed']):
         r''' Get entities
 
         text:  text to be annotated
@@ -728,13 +722,12 @@ class CAT(object):
         return json.dumps(out)
 
 
-    def multiprocessing(self, in_data, nproc=8, batch_size_chars=1000000, max_ram_percentage=-1, only_cui=False, addl_info=[]):
+    def multiprocessing(self, in_data, nproc=8, batch_size_chars=1000000, only_cui=False, addl_info=[]):
         r''' Run multiprocessing NOT FOR TRAINING
 
         in_data:  an iterator or array with format: [(id, text), (id, text), ...]
         nproc:  number of processors
         batch_size_chars: size of a batch in number of characters
-        max_ram_percentage: maximum utilzation of RAM when running many processes, if it is more, it will pause until some processes are done 
 
         return:  an list of tuples: [(id, doc_json), (id, doc_json), ...]
         '''
@@ -753,7 +746,7 @@ class CAT(object):
         procs = []
         for i in range(nproc):
             p = Process(target=self._mp_cons, kwargs={'in_q': in_q, 'out_dict': out_dict, 'pid': i, 'only_cui': only_cui,
-                'addl_info': addl_info, 'max_ram_percentage': max_ram_percentage})
+                'addl_info': addl_info})
             p.start()
             procs.append(p)
 
@@ -792,7 +785,7 @@ class CAT(object):
         return out
 
 
-    def _mp_cons(self, in_q, out_dict, pid=0, only_cui=False, addl_info=[], max_ram_percentage=-1):
+    def _mp_cons(self, in_q, out_dict, pid=0, only_cui=False, addl_info=[]):
         cnt = 0
         out = []
         while True:
@@ -804,11 +797,6 @@ class CAT(object):
 
                 for id, text in data:
                     try:
-                        if max_ram_percentage > 0:
-                            while psutil.virtual_memory().percent > max_ram_percentage:
-                                self.log.debug("Process: {}, waiting because current RAM usage: {}".format(pid, psutil.virtual_memory().percent))
-                                sleep(30)
-
                         # Annotate document
                         doc = self.get_entities(text=text, only_cui=only_cui, addl_info=addl_info)
                         doc['text'] = text

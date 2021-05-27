@@ -59,8 +59,10 @@ class ContextModel(object):
             # Add left
             values.extend([self.config.linking['weighted_average_function'](step) * self.vocab.vec(tkn.lower_)
                            for step, tkn in enumerate(tokens_left) if tkn.lower_ in self.vocab and self.vocab.vec(tkn.lower_) is not None])
-            # Add center - used normalized
-            values.extend([self.vocab.vec(tkn.lower_) for tkn in tokens_center if tkn.lower_ in self.vocab and self.vocab.vec(tkn.lower_) is not None])
+
+            if self.config.linking.get('context_ignore_center_tokens', False):
+                # Add center
+                values.extend([self.vocab.vec(tkn.lower_) for tkn in tokens_center if tkn.lower_ in self.vocab and self.vocab.vec(tkn.lower_) is not None])
 
             # Add right
             values.extend([self.config.linking['weighted_average_function'](step) * self.vocab.vec(tkn.lower_)
@@ -178,12 +180,12 @@ class ContextModel(object):
             if not negative:
                 # Update the name count, if possible
                 if type(entity) == spacy.tokens.span.Span:
-                    self.cdb.name2count_train[entity._.detected_name] += 1
+                    self.cdb.name2count_train[entity._.detected_name] = self.cdb.name2count_train.get(entity._.detected_name, 0) + 1
 
                 if self.config.linking.get('calculate_dynamic_threshold', False):
                     # Update average confidence for this CUI
                     sim = self.similarity(cui, entity, doc)
-                    self.cdb.update_cui2_average_confidence(cui=cui, new_sim=sim)
+                    self.cdb.update_cui2average_confidence(cui=cui, new_sim=sim)
 
             if negative:
                 # Change the status of the name so that it has to be disambiguated always
