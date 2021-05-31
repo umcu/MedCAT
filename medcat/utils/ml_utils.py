@@ -84,6 +84,9 @@ def train_network(net, data, lr=0.01, test_size=0.1, max_seq_len=41, pad_id=3000
     y = np.array([x[0] for x in data])
     x = [x[1] for x in data]
     cent = np.array([x[2] for x in data])
+    texts = [x[3] for x in data]
+    annotations = [x[4] for x in data]
+
     # Pad X and convert to array
     x = np.array([(sample + [pad_id] * max(0, max_seq_len - len(sample)))[0:max_seq_len] for sample in x])
 
@@ -159,6 +162,13 @@ def train_network(net, data, lr=0.01, test_size=0.1, max_seq_len=41, pad_id=3000
         train_loss = np.average(running_loss_train)
         test_loss = np.average(running_loss_test)
 
+        test_output = np.argmax(np.concatenate(test_outs, axis=0), axis=1)
+        index_fp = [idx for idx, element in enumerate(test_output) if element != y_test[idx] and element == 1]
+        index_fn = [idx for idx, element in enumerate(test_output) if element != y_test[idx] and element == 0]
+        for idx in index_fp:
+            print("fp", texts[idx], annotations[idx])
+        for idx in index_fn:
+            print("fn", texts[idx], annotations[idx])
         print(f'Epoch: {epoch} ' + "*"*50 + "  Train")
         print(classification_report(y_train, np.argmax(np.concatenate(train_outs, axis=0), axis=1)))
         print(f'Epoch: {epoch} ' + "*"*50 + "  Test")

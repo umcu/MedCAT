@@ -860,7 +860,7 @@ def prepare_from_json_chars(data, cntx_left, cntx_right, tokenizer, cui_filter=N
                                 t_center = tokenizer(replace_center)['input_ids']
 
                             tkns = t_left + t_center + t_right
-                            cpos = len(t_left) - 1
+                            cpos = len(t_left) #- 1
 
                             # Backward compatibility if meta_anns is a list vs dict in the new approach
                             meta_anns = []
@@ -1048,7 +1048,9 @@ def prepare_from_json(data, cntx_left, cntx_right, tokenizer, cntx_in_chars=Fals
                                 value = meta_ann['value']
                                 dep = list(ann['parse'])
                              #   sample = [value, list(tkns) + dep, cpos]
-                                sample = [value, tkns, cpos]
+                             #    if cpos == 0:
+                             #        cpos = len(t_right)
+                                sample = [value, tkns, cpos, text, ann['value']]
 
                                 if name in out_data:
                                     out_data[name].append(sample)
