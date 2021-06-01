@@ -29,32 +29,33 @@ def maybe_annotate_name(name, tkns, doc, cdb, config, label='concept'):
 
     log.debug("Maybe annotating name: {}".format(name))
     check_upper_case_names = config.general.get('check_upper_case_names', False)
-    upper_check = all([x.is_upper for x in tkns]) == cdb.name_isupper.get(name, False)
-    if (not check_upper_case_names) \
-            or (check_upper_case_names and upper_check) \
-                or (not upper_check):
-        if len(name) >= config.ner['min_name_len']:
+    #upper_check = all([x.is_upper for x in tkns]) == cdb.name_isupper.get(name, False)
+    if len(name) >= config.ner['min_name_len']:
+        #if (not check_upper_case_names) \
+        #    or (check_upper_case_names and upper_check) \
+        #        or (not upper_check):
             # Check the upper case limit, last part checks is it one token and uppercase
-            if (len(name) <= config.ner['upper_case_limit_len'] and upper_check) \
-                    or (len(tkns) == 1 and tkns[0].is_upper) \
-                        or (not upper_check):
-                # Everything is fine, mark name
-                entity = Span(doc, tkns[0].i, tkns[-1].i + 1, label=label)
-                # Only set this property when using a vocab approach and where this name
-                #fits a name in the cdb. All standard name entity recognition models will not set this.
-                entity._.detected_name = name
-                entity._.link_candidates = cdb.name2cuis[name]
-                entity._.id = len(doc._.ents)
-                entity._.confidence = -1 #  This does not calculate confidence
-                # Append the entity to the document
-                doc._.ents.append(entity)
+        if ((len(name) <= config.ner['upper_case_limit_len']) and (cdb.name_isupper.get(name, False))) | \
+                (not cdb.name_isupper.get(name, False)):
+            #    or (len(tkns) == 1 and tkns[0].is_upper) \
+            #        or (not upper_check):
+            # Everything is fine, mark name
+            entity = Span(doc, tkns[0].i, tkns[-1].i + 1, label=label)
+            # Only set this property when using a vocab approach and where this name
+            #fits a name in the cdb. All standard name entity recognition models will not set this.
+            entity._.detected_name = name
+            entity._.link_candidates = cdb.name2cuis[name]
+            entity._.id = len(doc._.ents)
+            entity._.confidence = -1 #  This does not calculate confidence
+            # Append the entity to the document
+            doc._.ents.append(entity)
 
-                # Not necessary, but why not
-                log.debug("NER detected an entity." +
-                          "\n\tDetected name: {}".format(entity._.detected_name) +
-                          "\n\tLink candidates: {}\n".format(entity._.link_candidates))
+            # Not necessary, but why not
+            log.debug("NER detected an entity." +
+                      "\n\tDetected name: {}".format(entity._.detected_name) +
+                      "\n\tLink candidates: {}\n".format(entity._.link_candidates))
 
-                return entity
+            return entity
 
     return None
 
