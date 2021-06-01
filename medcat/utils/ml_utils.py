@@ -163,12 +163,18 @@ def train_network(net, data, lr=0.01, test_size=0.1, max_seq_len=41, pad_id=3000
         test_loss = np.average(running_loss_test)
 
         test_output = np.argmax(np.concatenate(test_outs, axis=0), axis=1)
-        index_fp = [idx for idx, element in enumerate(test_output) if element != y_test[idx] and element == 1]
-        index_fn = [idx for idx, element in enumerate(test_output) if element != y_test[idx] and element == 0]
+        index_fn = [idx for idx, element in enumerate(test_output) if element != y_test[idx] and element == 1]
+        index_fp = [idx for idx, element in enumerate(test_output) if element != y_test[idx] and element == 0]
         for idx in index_fp:
-            print("fp", texts[idx], annotations[idx])
+            print("FP: ", texts[idx], annotations[idx])
         for idx in index_fn:
-            print("fn", texts[idx], annotations[idx])
+            print("FN: ", texts[idx], annotations[idx])
+        index_tn = [idx for idx, element in enumerate(test_output) if element == y_test[idx] and element == 1]
+        index_tp = [idx for idx, element in enumerate(test_output) if element == y_test[idx] and element == 0]
+        for idx in index_tp:
+            print("TP:", texts[idx], annotations[idx])
+        for idx in index_tn:
+            print("TN:", texts[idx], annotations[idx])
         print(f'Epoch: {epoch} ' + "*"*50 + "  Train")
         print(classification_report(y_train, np.argmax(np.concatenate(train_outs, axis=0), axis=1)))
         print(f'Epoch: {epoch} ' + "*"*50 + "  Test")
